@@ -28,24 +28,12 @@ jobs:
           sudo apt-get install -y jq
 
       # 4. Configure AWS credentials
-      - name: Log stage secrets
-        run: |
-          echo "[INFO] GitHub Environment: staging (Settings → Environments → staging → Environment secrets)"
-          echo "[INFO] Secret values cannot be listed in Actions; this step only checks presence."
-          echo ""
-          echo "  AWS_ACCESS_KEY_ID       ${{ secrets.AWS_ACCESS_KEY_ID != '' && 'SET' || 'MISSING' }}"
-          echo "  AWS_SECRET_ACCESS_KEY   ${{ secrets.AWS_SECRET_ACCESS_KEY != '' && 'SET' || 'MISSING' }}"
-          echo "  AWS_REGION              ${{ secrets.AWS_REGION != '' && 'SET' || 'MISSING' }}"
-          echo "  EMAIL                   ${{ secrets.EMAIL != '' && 'SET' || 'MISSING' }}"
-          echo "  PASSWORD                ${{ secrets.PASSWORD != '' && 'SET' || 'MISSING' }}"
-          echo "  GRAPHQL_URL             ${{ secrets.GRAPHQL_URL != '' && 'SET' || 'MISSING' }}"
-
-      # 4. Configure AWS credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       # 5. Verify AWS identity
