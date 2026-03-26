@@ -1,0 +1,118 @@
+name: Deploy to Staging Lambdas
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Debug - show repo structure
+      - name: List files
+        run: |
+          echo "[INFO] Repository structure:"
+          ls -R
+
+      # 3. Install jq (for JSON parsing)
+      - name: Install jq
+        run: |
+          echo "[INFO] Installing jq..."
+          sudo apt-get install -y jq
+
+      # 4. Configure AWS credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # 5. Verify AWS identity
+      - name: Verify AWS Identity
+        run: |
+          echo "[INFO] Verifying AWS identity..."
+          aws sts get-caller-identity
+
+      # 6. Deploy Lambdas using mapping file
+      - name: Deploy Lambdas
+        run: |
+          set -e
+
+          ENV="staging"
+          echo "[INFO] Using environment: $ENV"
+
+          # Loop through mapping file
+          for FOLDER in $(jq -r 'keys[]' lambda-map.json); do
+
+            BASE_NAME=$(jq -r --arg key "$FOLDER" '.[$key]' lambda-map.json)
+            FUNCTION_NAME="${BASE_NAME}-${ENV}"
+
+            echo "------------------------------------"
+            echo "[INFO] Folder        : $FOLDER"
+            echo "[INFO] Base Lambda   : $BASE_NAME"
+            echo "[INFO] Final Lambda  : $FUNCTION_NAME"
+            echo "------------------------------------"
+
+            # -------------------------------
+            # 📦 Zip Lambda
+            # -------------------------------
+            echo "[INFO] Zipping code for $FOLDER..."
+            cd "src/$FOLDER"
+            zip -r "../../$FOLDER.zip" . > /dev/null
+            cd -
+
+            ls -la "$FOLDER.zip"
+
+            # -------------------------------
+            # 🚀 Update Lambda code
+            # -------------------------------
+            echo "[INFO] Updating Lambda code..."
+            aws lambda update-function-code \
+              --function-name "$FUNCTION_NAME" \
+              --zip-file "fileb://$FOLDER.zip" > /dev/null
+
+            echo "[SUCCESS] Code updated for $FUNCTION_NAME"
+
+            # -------------------------------
+            # 🔐 Update environment variables
+            # -------------------------------
+            echo "[INFO] Updating environment variables..."
+            aws lambda update-function-configuration \
+              --function-name "$FUNCTION_NAME" \
+              --environment "Variables={
+                EMAIL=${{ secrets.EMAIL_STAGE }},
+                PASSWORD=${{ secrets.PASSWORD_STAGE }},
+                GRAPHQL_URL=${{ secrets.GRAPHQL_URL_STAGE }}
+              }" > /dev/null
+
+            echo "[SUCCESS] Environment updated for $FUNCTION_NAME"
+
+            echo "[SUCCESS] Deployment complete for $FUNCTION_NAME"
+          done
+
+      # 7. Verify Lambda configuration
+      - name: Verify Lambda Configs
+        run: |
+          set -e
+
+          ENV="staging"
+
+          for FOLDER in $(jq -r 'keys[] | select(. != "_comment")' lambda-map.json); do
+            BASE_NAME=$(jq -r --arg key "$FOLDER" '.[$key]' lambda-map.json)
+            FUNCTION_NAME="${BASE_NAME}-${ENV}"
+
+            echo "[INFO] Verifying $FUNCTION_NAME..."
+
+            aws lambda get-function-configuration \
+              --function-name "$FUNCTION_NAME" \
+              --query "Environment"
+
+            echo "[SUCCESS] Verified $FUNCTION_NAME"
+          done
