@@ -47,12 +47,30 @@ jobs:
           aws sts get-caller-identity
 
       # 6. Deploy Lambdas using mapping file
+      # Same secret NAMES as staging — values from GitHub Environment "production".
+      # Add new keys to lambda-env-mapping.json commerce_secret_names + env block below.
       - name: Deploy Lambdas
+        env:
+          COMMERCE_BASE_URL: ${{ secrets.COMMERCE_BASE_URL }}
+          COMMERCE_CONSUMER_KEY: ${{ secrets.COMMERCE_CONSUMER_KEY }}
+          COMMERCE_CONSUMER_SECRET: ${{ secrets.COMMERCE_CONSUMER_SECRET }}
+          COMMERCE_ACCESS_TOKEN: ${{ secrets.COMMERCE_ACCESS_TOKEN }}
+          COMMERCE_ACCESS_TOKEN_SECRET: ${{ secrets.COMMERCE_ACCESS_TOKEN_SECRET }}
+          COMMERCE_OFFLINE_BOOKING_CANCEL_PATH: ${{ secrets.COMMERCE_OFFLINE_BOOKING_CANCEL_PATH }}
         run: |
           set -e
 
           ENV="prod"
           echo "[INFO] Using environment: $ENV"
+
+          echo "[INFO] Building Lambda environment (production GitHub Environment → Lambda keys)..."
+          bash scripts/build-lambda-environment.sh production > /tmp/lambda-env.json
+          echo "[INFO] Lambda env keys (non-empty):"
+          jq '.Variables | keys' /tmp/lambda-env.json
+          if [ "$(jq '.Variables | length' /tmp/lambda-env.json)" -eq 0 ]; then
+            echo "::error::No production secrets resolved — add COMMERCE_* secrets and env block in deploy-prod.yml"
+            exit 1
+          fi
 
           # Loop through mapping file (skip JSON-only keys like _comment)
           for FOLDER in $(jq -r 'keys[] | select(. != "_comment")' lambda-map.json); do
@@ -71,6 +89,10 @@ jobs:
             # -------------------------------
             echo "[INFO] Zipping code for $FOLDER..."
             cd "src/$FOLDER"
+            if [ -f package.json ]; then
+              echo "[INFO] npm ci (production deps)..."
+              npm ci --omit=dev
+            fi
             zip -r "../../$FOLDER.zip" . > /dev/null
             cd -
 
@@ -87,16 +109,12 @@ jobs:
             echo "[SUCCESS] Code updated for $FUNCTION_NAME"
 
             # -------------------------------
-            # 🔐 Update environment variables
+            # 🔐 Update environment variables (from secrets → lambda-env-mapping.json)
             # -------------------------------
             echo "[INFO] Updating environment variables..."
-            aws lambda update-function-configuration \
-              --function-name "$FUNCTION_NAME" \
-              --environment "Variables={
-                EMAIL=${{ secrets.EMAIL }},
-                PASSWORD=${{ secrets.PASSWORD }},
-                GRAPHQL_URL=${{ secrets.GRAPHQL_URL }}
-              }" > /dev/null
+            jq -n --arg fn "$FUNCTION_NAME" --argjson env "$(cat /tmp/lambda-env.json)" \
+              '{FunctionName: $fn, Environment: $env}' > /tmp/cli-input.json
+            aws lambda update-function-configuration --cli-input-json file:///tmp/cli-input.json
 
             echo "[SUCCESS] Environment updated for $FUNCTION_NAME"
 
@@ -108,11 +126,9 @@ jobs:
         run: |
           set -e
 
-          ENV="prod"
-
           for FOLDER in $(jq -r 'keys[] | select(. != "_comment")' lambda-map.json); do
             BASE_NAME=$(jq -r --arg key "$FOLDER" '.[$key]' lambda-map.json)
-            FUNCTION_NAME="${BASE_NAME}-${ENV}"
+            FUNCTION_NAME="${BASE_NAME}"
 
             echo "[INFO] Verifying $FUNCTION_NAME..."
 

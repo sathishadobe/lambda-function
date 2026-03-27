@@ -1,38 +1,27 @@
+import { isKinesisEvent } from "./lib/kinesis.mjs";
+import { handleKinesis } from "./kinesis-handler.mjs";
+
+/**
+ * - Kinesis: routes by stream ARN → processor (see config/stream-registry.mjs).
+ * - Other invokes: health / manual test only (primary path is Kinesis).
+ */
 export const handler = async (event) => {
-  try {
-    const email = process.env.EMAIL_staging ?? process.env.EMAIL;
-    const password = process.env.PASSWORD_staging ?? process.env.PASSWORD;
-    const url = process.env.GRAPHQL_URL_staging ?? process.env.GRAPHQL_URL;
+  if (isKinesisEvent(event)) {
+    return handleKinesis(event);
+  }
 
-    console.log(`Invoking ${url} to fetch customer token for ${email}`);
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        query: `
-          mutation GenerateToken($email: String!, $password: String!) {
-            generateCustomerToken(email: $email, password: $password) {
-              token
-            }
-          }
-        `,
-        variables: { email, password }
-      })
-    });
-
-    const data = await response.json();
-    console.log("GraphQL response:", data);
-
+  if (event && typeof event === "object" && event.action === "ping") {
     return {
       statusCode: 200,
-      body: JSON.stringify(data)
+      body: JSON.stringify({ ok: true, message: "bnpl-offline handler up" })
     };
-
-  } catch (err) {
-    console.error("Error:", err);
-    throw err;
   }
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      message:
+        "Invoke with a Kinesis event, or { \"action\": \"ping\" } for health. Commerce REST: use getCommerceClient(environment) from lib/commerce-client.mjs in processors."
+    })
+  };
 };
