@@ -33,7 +33,6 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       # 5. Verify AWS identity
@@ -54,7 +53,7 @@ jobs:
           for FOLDER in $(jq -r 'keys[] | select(. != "_comment")' lambda-map.json); do
 
             BASE_NAME=$(jq -r --arg key "$FOLDER" '.[$key]' lambda-map.json)
-            FUNCTION_NAME="${BASE_NAME}-${ENV}"
+            FUNCTION_NAME="${BASE_NAME}"
 
             echo "------------------------------------"
             echo "[INFO] Folder        : $FOLDER"
@@ -89,9 +88,9 @@ jobs:
             aws lambda update-function-configuration \
               --function-name "$FUNCTION_NAME" \
               --environment "Variables={
-                EMAIL=${{ secrets.EMAIL }},
-                PASSWORD=${{ secrets.PASSWORD }},
-                GRAPHQL_URL=${{ secrets.GRAPHQL_URL }}
+                EMAIL_staging=${{ secrets.EMAIL }},
+                PASSWORD_staging=${{ secrets.PASSWORD }},
+                GRAPHQL_URL_staging=${{ secrets.GRAPHQL_URL }}
               }" > /dev/null
 
             echo "[SUCCESS] Environment updated for $FUNCTION_NAME"
@@ -104,11 +103,9 @@ jobs:
         run: |
           set -e
 
-          ENV="staging"
-
           for FOLDER in $(jq -r 'keys[] | select(. != "_comment")' lambda-map.json); do
             BASE_NAME=$(jq -r --arg key "$FOLDER" '.[$key]' lambda-map.json)
-            FUNCTION_NAME="${BASE_NAME}-${ENV}"
+            FUNCTION_NAME="${BASE_NAME}"
 
             echo "[INFO] Verifying $FUNCTION_NAME..."
 

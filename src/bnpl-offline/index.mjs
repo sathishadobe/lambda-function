@@ -1,8 +1,8 @@
 export const handler = async (event) => {
   try {
-    const email = process.env.EMAIL;
-    const password = process.env.PASSWORD;
-    const url = process.env.GRAPHQL_URL;
+    const email = process.env.EMAIL_staging ?? process.env.EMAIL;
+    const password = process.env.PASSWORD_staging ?? process.env.PASSWORD;
+    const url = process.env.GRAPHQL_URL_staging ?? process.env.GRAPHQL_URL;
 
     console.log(`Invoking ${url} to fetch customer token for ${email}`);
 

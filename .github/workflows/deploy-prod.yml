@@ -28,12 +28,15 @@ jobs:
           sudo apt-get install -y jq
 
       # 4. Configure AWS credentials
+      # IAM user (long-term) keys: access key + secret + region only — do NOT set
+      # AWS_SESSION_TOKEN in GitHub (or remove it if present). A wrong/empty session
+      # token causes: "The security token included in the request is invalid."
+      # Temporary creds only: add aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }} below.
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       # 5. Verify AWS identity
@@ -54,7 +57,7 @@ jobs:
           for FOLDER in $(jq -r 'keys[] | select(. != "_comment")' lambda-map.json); do
 
             BASE_NAME=$(jq -r --arg key "$FOLDER" '.[$key]' lambda-map.json)
-            FUNCTION_NAME="${BASE_NAME}-${ENV}"
+            FUNCTION_NAME="${BASE_NAME}"
 
             echo "------------------------------------"
             echo "[INFO] Folder        : $FOLDER"
