@@ -44,7 +44,7 @@ jobs:
 
       # 6. Deploy Lambdas using mapping file
       # Staging: GitHub secrets use *_STAGING names. Runner env uses base names; script maps to Lambda …_STAGING.
-      # Add new keys to lambda-env-mapping.json + env block below.
+      # Add each variable name to lambda-env-mapping.json "variables" + matching env line below.
       - name: Deploy Lambdas
         env:
           COMMERCE_BASE_URL: ${{ secrets.COMMERCE_BASE_URL_STAGING }}

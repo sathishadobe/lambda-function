@@ -48,7 +48,7 @@ jobs:
 
       # 6. Deploy Lambdas using mapping file
       # Same secret NAMES as staging — values from GitHub Environment "production".
-      # Add new keys to lambda-env-mapping.json + env block below.
+      # Add each variable name to lambda-env-mapping.json "variables" + matching env line below.
       - name: Deploy Lambdas
         env:
           COMMERCE_BASE_URL: ${{ secrets.COMMERCE_BASE_URL }}

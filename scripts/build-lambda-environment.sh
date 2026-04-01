@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # Build AWS Lambda environment JSON from the runner environment.
-# Runner env uses base names (e.g. COMMERCE_BASE_URL); staging deploy → Lambda keys …_STAGING.
+#
+# lambda-env-mapping.json "variables" lists allowed env var NAMES (base names).
+# For each name: if the runner has a non-empty value, it is copied to Lambda.
+#   staging   → Lambda key NAME_STAGING
+#   production → Lambda key NAME
+#
 set -euo pipefail
 
 PROFILE="${1:-}"
@@ -14,6 +19,7 @@ fi
 
 vars='{}'
 while read -r name; do
+  [[ -z "$name" ]] && continue
   val="${!name:-}"
   if [[ -z "$val" ]]; then
     continue
@@ -24,6 +30,6 @@ while read -r name; do
     key="$name"
   fi
   vars=$(jq -n --argjson o "$vars" --arg k "$key" --arg v "$val" '$o + {($k): $v}')
-done < <(jq -r '(.commerce_secret_names // []) + (.dms_secret_names // []) + (.aws_secret_names // []) | .[]' "$MAPPING")
+done < <(jq -r '(.variables // [])[]' "$MAPPING")
 
 jq -n --argjson v "$vars" '{Variables: $v}'
