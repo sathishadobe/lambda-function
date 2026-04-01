@@ -7,7 +7,7 @@ import {
 /**
  * Offline booking cancellation → Adobe Commerce REST (OAuth 1.0a).
  * Configure Lambda env COMMERCE_OFFLINE_BOOKING_CANCEL_PATH to the V1 relative path
- * from your spec (e.g. offline/booking/cancel). Staging: …_PATH_staging.
+ * from your spec (e.g. offline/booking/cancel). Staging: …_PATH_STAGING.
  *
  * @param {import('./types.mjs').ProcessorContext} ctx
  */
@@ -15,7 +15,7 @@ export async function process(ctx) {
   const path = getOfflineBookingCancelRestPath(ctx.environment);
   if (!path) {
     throw new Error(
-      "Set COMMERCE_OFFLINE_BOOKING_CANCEL_PATH (and optional _staging) to the Commerce REST path under rest/V1/"
+      "Set COMMERCE_OFFLINE_BOOKING_CANCEL_PATH (and optional _STAGING) to the Commerce REST path under rest/V1/"
     );
   }
 

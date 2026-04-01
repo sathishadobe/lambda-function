@@ -6,7 +6,7 @@
 
 /**
  * OAuth 1.0a + base URL for Adobe Commerce REST (same model as maruti-aio getCommerceOauthClient).
- * Staging: prefer *_staging suffixed env vars, then fall back to unsuffixed.
+ * Staging: prefer *_STAGING suffixed env vars, then fall back to unsuffixed.
  *
  * @param {Environment} environment
  */
@@ -14,12 +14,12 @@ export function getCommerceConfig(environment) {
   if (environment === "staging") {
     return {
       environment,
-      baseUrl: process.env.COMMERCE_BASE_URL_staging ?? process.env.COMMERCE_BASE_URL ?? "",
-      consumerKey: process.env.COMMERCE_CONSUMER_KEY_staging ?? process.env.COMMERCE_CONSUMER_KEY ?? "",
-      consumerSecret: process.env.COMMERCE_CONSUMER_SECRET_staging ?? process.env.COMMERCE_CONSUMER_SECRET ?? "",
-      accessToken: process.env.COMMERCE_ACCESS_TOKEN_staging ?? process.env.COMMERCE_ACCESS_TOKEN ?? "",
+      baseUrl: process.env.COMMERCE_BASE_URL_STAGING ?? process.env.COMMERCE_BASE_URL ?? "",
+      consumerKey: process.env.COMMERCE_CONSUMER_KEY_STAGING ?? process.env.COMMERCE_CONSUMER_KEY ?? "",
+      consumerSecret: process.env.COMMERCE_CONSUMER_SECRET_STAGING ?? process.env.COMMERCE_CONSUMER_SECRET ?? "",
+      accessToken: process.env.COMMERCE_ACCESS_TOKEN_STAGING ?? process.env.COMMERCE_ACCESS_TOKEN ?? "",
       accessTokenSecret:
-        process.env.COMMERCE_ACCESS_TOKEN_SECRET_staging ?? process.env.COMMERCE_ACCESS_TOKEN_SECRET ?? ""
+        process.env.COMMERCE_ACCESS_TOKEN_SECRET_STAGING ?? process.env.COMMERCE_ACCESS_TOKEN_SECRET ?? ""
     };
   }
   return {
@@ -29,5 +29,32 @@ export function getCommerceConfig(environment) {
     consumerSecret: process.env.COMMERCE_CONSUMER_SECRET ?? "",
     accessToken: process.env.COMMERCE_ACCESS_TOKEN ?? "",
     accessTokenSecret: process.env.COMMERCE_ACCESS_TOKEN_SECRET ?? ""
+  };
+}
+
+/**
+ * DMS APIs (token + booked cars). Staging: *_STAGING then fallback.
+ *
+ * @param {Environment} environment
+ */
+export function getDmsConfig(environment) {
+  if (environment === "staging") {
+    return {
+      environment,
+      tokenUrl: process.env.DMS_TOKEN_URL_STAGING ?? process.env.DMS_TOKEN_URL ?? "",
+      clientId: process.env.DMS_CLIENT_ID_STAGING ?? process.env.DMS_CLIENT_ID ?? "",
+      clientSecret: process.env.DMS_CLIENT_SECRET_STAGING ?? process.env.DMS_CLIENT_SECRET ?? "",
+      bookedCarsApiUrl:
+        process.env.DMS_BOOKED_CARS_API_URL_STAGING ?? process.env.DMS_BOOKED_CARS_API_URL ?? "",
+      xApiKey: process.env.DMS_X_API_KEY_STAGING ?? process.env.DMS_X_API_KEY ?? ""
+    };
+  }
+  return {
+    environment,
+    tokenUrl: process.env.DMS_TOKEN_URL ?? "",
+    clientId: process.env.DMS_CLIENT_ID ?? "",
+    clientSecret: process.env.DMS_CLIENT_SECRET ?? "",
+    bookedCarsApiUrl: process.env.DMS_BOOKED_CARS_API_URL ?? "",
+    xApiKey: process.env.DMS_X_API_KEY ?? ""
   };
 }

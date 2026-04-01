@@ -6,5 +6,18 @@
     "COMMERCE_ACCESS_TOKEN",
     "COMMERCE_ACCESS_TOKEN_SECRET",
     "COMMERCE_OFFLINE_BOOKING_CANCEL_PATH"
+  ],
+  "dms_secret_names": [
+    "DMS_TOKEN_URL",
+    "DMS_CLIENT_ID",
+    "DMS_CLIENT_SECRET",
+    "DMS_BOOKED_CARS_API_URL",
+    "DMS_X_API_KEY"
+  ],
+  "aws_secret_names": [
+    "AWS_ACCESS_KEY_ID",
+    "AWS_SECRET_ACCESS_KEY",
+    "AWS_REGION",
+    "AWS_SESSION_TOKEN"
   ]
 }

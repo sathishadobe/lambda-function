@@ -48,7 +48,7 @@ jobs:
 
       # 6. Deploy Lambdas using mapping file
       # Same secret NAMES as staging — values from GitHub Environment "production".
-      # Add new keys to lambda-env-mapping.json commerce_secret_names + env block below.
+      # Add new keys to lambda-env-mapping.json + env block below.
       - name: Deploy Lambdas
         env:
           COMMERCE_BASE_URL: ${{ secrets.COMMERCE_BASE_URL }}
@@ -57,6 +57,15 @@ jobs:
           COMMERCE_ACCESS_TOKEN: ${{ secrets.COMMERCE_ACCESS_TOKEN }}
           COMMERCE_ACCESS_TOKEN_SECRET: ${{ secrets.COMMERCE_ACCESS_TOKEN_SECRET }}
           COMMERCE_OFFLINE_BOOKING_CANCEL_PATH: ${{ secrets.COMMERCE_OFFLINE_BOOKING_CANCEL_PATH }}
+          DMS_TOKEN_URL: ${{ secrets.DMS_TOKEN_URL }}
+          DMS_CLIENT_ID: ${{ secrets.DMS_CLIENT_ID }}
+          DMS_CLIENT_SECRET: ${{ secrets.DMS_CLIENT_SECRET }}
+          DMS_BOOKED_CARS_API_URL: ${{ secrets.DMS_BOOKED_CARS_API_URL }}
+          DMS_X_API_KEY: ${{ secrets.DMS_X_API_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         run: |
           set -e
 

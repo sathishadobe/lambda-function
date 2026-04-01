@@ -69,14 +69,14 @@ function omitUndefined(obj) {
 
 /**
  * REST path under …/rest/V1/ (e.g. offline/booking/cancel).
- * Set in Lambda: COMMERCE_OFFLINE_BOOKING_CANCEL_PATH (+ optional _staging).
+ * Set in Lambda: COMMERCE_OFFLINE_BOOKING_CANCEL_PATH (+ optional _STAGING for staging).
  *
  * @param {'staging' | 'production'} environment
  */
 export function getOfflineBookingCancelRestPath(environment) {
   if (environment === "staging") {
     return (
-      process.env.COMMERCE_OFFLINE_BOOKING_CANCEL_PATH_staging ??
+      process.env.COMMERCE_OFFLINE_BOOKING_CANCEL_PATH_STAGING ??
       process.env.COMMERCE_OFFLINE_BOOKING_CANCEL_PATH ??
       ""
     );

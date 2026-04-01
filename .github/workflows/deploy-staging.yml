@@ -31,10 +31,10 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_STAGING }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_STAGING }}
+          aws-region: ${{ secrets.AWS_REGION_STAGING }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN_STAGING }}
 
       # 5. Verify AWS identity
       - name: Verify AWS Identity
@@ -43,29 +43,37 @@ jobs:
           aws sts get-caller-identity
 
       # 6. Deploy Lambdas using mapping file
-      # Same secret NAMES as production (COMMERCE_BASE_URL, …) — values come from this job's
-      # GitHub Environment "staging". Script maps them to Lambda keys …_staging.
-      # Add new keys to lambda-env-mapping.json commerce_secret_names + env block below.
+      # Staging: GitHub secrets use *_STAGING names. Runner env uses base names; script maps to Lambda …_STAGING.
+      # Add new keys to lambda-env-mapping.json + env block below.
       - name: Deploy Lambdas
         env:
-          COMMERCE_BASE_URL: ${{ secrets.COMMERCE_BASE_URL }}
-          COMMERCE_CONSUMER_KEY: ${{ secrets.COMMERCE_CONSUMER_KEY }}
-          COMMERCE_CONSUMER_SECRET: ${{ secrets.COMMERCE_CONSUMER_SECRET }}
-          COMMERCE_ACCESS_TOKEN: ${{ secrets.COMMERCE_ACCESS_TOKEN }}
-          COMMERCE_ACCESS_TOKEN_SECRET: ${{ secrets.COMMERCE_ACCESS_TOKEN_SECRET }}
-          COMMERCE_OFFLINE_BOOKING_CANCEL_PATH: ${{ secrets.COMMERCE_OFFLINE_BOOKING_CANCEL_PATH }}
+          COMMERCE_BASE_URL: ${{ secrets.COMMERCE_BASE_URL_STAGING }}
+          COMMERCE_CONSUMER_KEY: ${{ secrets.COMMERCE_CONSUMER_KEY_STAGING }}
+          COMMERCE_CONSUMER_SECRET: ${{ secrets.COMMERCE_CONSUMER_SECRET_STAGING }}
+          COMMERCE_ACCESS_TOKEN: ${{ secrets.COMMERCE_ACCESS_TOKEN_STAGING }}
+          COMMERCE_ACCESS_TOKEN_SECRET: ${{ secrets.COMMERCE_ACCESS_TOKEN_SECRET_STAGING }}
+          COMMERCE_OFFLINE_BOOKING_CANCEL_PATH: ${{ secrets.COMMERCE_OFFLINE_BOOKING_CANCEL_PATH_STAGING }}
+          DMS_TOKEN_URL: ${{ secrets.DMS_TOKEN_URL_STAGING }}
+          DMS_CLIENT_ID: ${{ secrets.DMS_CLIENT_ID_STAGING }}
+          DMS_CLIENT_SECRET: ${{ secrets.DMS_CLIENT_SECRET_STAGING }}
+          DMS_BOOKED_CARS_API_URL: ${{ secrets.DMS_BOOKED_CARS_API_URL_STAGING }}
+          DMS_X_API_KEY: ${{ secrets.DMS_X_API_KEY_STAGING }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_STAGING }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_STAGING }}
+          AWS_REGION: ${{ secrets.AWS_REGION_STAGING }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN_STAGING }}
         run: |
           set -e
 
           ENV="staging"
           echo "[INFO] Using environment: $ENV"
 
-          echo "[INFO] Building Lambda environment (staging GitHub Environment → Lambda *_staging keys)..."
+          echo "[INFO] Building Lambda environment (staging secrets → Lambda *_STAGING keys)..."
           bash scripts/build-lambda-environment.sh staging > /tmp/lambda-env.json
           echo "[INFO] Lambda env keys (non-empty):"
           jq '.Variables | keys' /tmp/lambda-env.json
           if [ "$(jq '.Variables | length' /tmp/lambda-env.json)" -eq 0 ]; then
-            echo "::error::No staging secrets resolved — add COMMERCE_* to the staging GitHub Environment and lambda-env-mapping.json"
+            echo "::error::No staging secrets resolved — add *_STAGING secrets (see deploy-staging.yml) and lambda-env-mapping.json"
             exit 1
           fi
 

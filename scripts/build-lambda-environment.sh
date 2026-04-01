@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build AWS Lambda environment JSON from the runner environment.
-# Same secret names per GitHub Environment; staging → Lambda keys …_staging.
+# Runner env uses base names (e.g. COMMERCE_BASE_URL); staging deploy → Lambda keys …_STAGING.
 set -euo pipefail
 
 PROFILE="${1:-}"
@@ -19,11 +19,11 @@ while read -r name; do
     continue
   fi
   if [[ "$PROFILE" == "staging" ]]; then
-    key="${name}_staging"
+    key="${name}_STAGING"
   else
     key="$name"
   fi
   vars=$(jq -n --argjson o "$vars" --arg k "$key" --arg v "$val" '$o + {($k): $v}')
-done < <(jq -r '.commerce_secret_names[]' "$MAPPING")
+done < <(jq -r '(.commerce_secret_names // []) + (.dms_secret_names // []) + (.aws_secret_names // []) | .[]' "$MAPPING")
 
 jq -n --argjson v "$vars" '{Variables: $v}'
