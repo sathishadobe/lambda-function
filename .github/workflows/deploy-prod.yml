@@ -107,19 +107,8 @@ jobs:
 
             ls -la "$FOLDER.zip"
 
-            # -------------------------------
-            # 🚀 Update Lambda code
-            # -------------------------------
-            echo "[INFO] Updating Lambda code..."
-            aws lambda update-function-code \
-              --function-name "$FUNCTION_NAME" \
-              --zip-file "fileb://$FOLDER.zip" > /dev/null
-
-            echo "[INFO] Waiting for code update to finish (required before config/env update)..."
-            aws lambda wait function-updated --function-name "$FUNCTION_NAME"
-
-            echo "[SUCCESS] Code updated for $FUNCTION_NAME"
-
+            # Env first, then code — avoids ResourceConflict after code update, and we cannot use
+            # `aws lambda wait function-updated` (requires lambda:GetFunctionConfiguration).
             # -------------------------------
             # 🔐 Update environment variables (from secrets → lambda-env-mapping.json)
             # -------------------------------
@@ -130,23 +119,15 @@ jobs:
 
             echo "[SUCCESS] Environment updated for $FUNCTION_NAME"
 
-            echo "[SUCCESS] Deployment complete for $FUNCTION_NAME"
-          done
-
-      # 7. Verify Lambda configuration
-      - name: Verify Lambda Configs
-        run: |
-          set -e
-
-          for FOLDER in $(jq -r 'keys[] | select(. != "_comment")' lambda-map.json); do
-            BASE_NAME=$(jq -r --arg key "$FOLDER" '.[$key]' lambda-map.json)
-            FUNCTION_NAME="${BASE_NAME}"
-
-            echo "[INFO] Verifying $FUNCTION_NAME..."
-
-            aws lambda get-function-configuration \
+            # -------------------------------
+            # 🚀 Update Lambda code
+            # -------------------------------
+            echo "[INFO] Updating Lambda code..."
+            aws lambda update-function-code \
               --function-name "$FUNCTION_NAME" \
-              --query "Environment"
+              --zip-file "fileb://$FOLDER.zip" > /dev/null
 
-            echo "[SUCCESS] Verified $FUNCTION_NAME"
+            echo "[SUCCESS] Code updated for $FUNCTION_NAME"
+
+            echo "[SUCCESS] Deployment complete for $FUNCTION_NAME"
           done
