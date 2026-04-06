@@ -10,7 +10,7 @@
  *
  * @param {Environment} environment
  */
-export function getCommerceConfig(environment) {
+function getCommerceConfig(environment) {
   if (environment === "staging") {
     return {
       environment,
@@ -37,7 +37,7 @@ export function getCommerceConfig(environment) {
  *
  * @param {Environment} environment
  */
-export function getDmsConfig(environment) {
+function getDmsConfig(environment) {
   if (environment === "staging") {
     return {
       environment,
@@ -58,3 +58,5 @@ export function getDmsConfig(environment) {
     xApiKey: process.env.DMS_X_API_KEY ?? ""
   };
 }
+
+export { getCommerceConfig, getDmsConfig };

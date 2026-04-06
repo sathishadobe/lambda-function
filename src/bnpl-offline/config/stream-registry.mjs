@@ -13,7 +13,7 @@ import { streamNameFromArn } from "../lib/kinesis.mjs";
 /**
  * @type {Record<string, { environment: Environment, processor: string }>}
  */
-export const STREAM_ROUTE_BY_NAME = {
+const STREAM_ROUTE_BY_NAME = {
   // --- Staging (5 streams) — replace with real stream names from AWS
   "REPLACE_ME_STAGE_updateItemsOffline": { environment: "staging", processor: "updateItemsOffline" },
   "REPLACE_ME_STAGE_CancelBookings": { environment: "staging", processor: "CancelBookings" },
@@ -32,7 +32,7 @@ export const STREAM_ROUTE_BY_NAME = {
     processor: "CancelBookedCarBookings"
   },
   "REPLACE_ME_PROD_PaymentUpdate": { environment: "production", processor: "PaymentUpdate" },
-  "REPLACE_ME_PROD_BookedCarInvoiced": { environment: "production", processor: "Bookq edCarInvoiced" }
+  "REPLACE_ME_PROD_BookedCarInvoiced": { environment: "production", processor: "BookedCarInvoiced" }
 };
 
 /** Optional: ARN → route cache (same batch usually shares one ARN) */
@@ -42,7 +42,7 @@ const arnRouteCache = new Map();
  * @param {string} eventSourceArn
  * @returns {{ environment: Environment, processor: string, streamName: string }}
  */
-export function resolveRoute(eventSourceArn) {
+function resolveRoute(eventSourceArn) {
   const cached = arnRouteCache.get(eventSourceArn);
   if (cached) {
     return cached;
@@ -64,3 +64,5 @@ export function resolveRoute(eventSourceArn) {
   arnRouteCache.set(eventSourceArn, resolved);
   return resolved;
 }
+
+export { STREAM_ROUTE_BY_NAME, resolveRoute };

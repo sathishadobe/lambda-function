@@ -5,7 +5,7 @@
 const KINESIS_EVENT_SOURCE = "aws:kinesis";
 
 /** @param {unknown} event */
-export function isKinesisEvent(event) {
+function isKinesisEvent(event) {
   return (
     typeof event === "object" &&
     event !== null &&
@@ -19,7 +19,7 @@ export function isKinesisEvent(event) {
  * Stream name from eventSourceARN:
  * arn:aws:kinesis:region:account:stream/my-stream-name
  */
-export function streamNameFromArn(eventSourceArn) {
+function streamNameFromArn(eventSourceArn) {
   if (!eventSourceArn || typeof eventSourceArn !== "string") {
     return null;
   }
@@ -31,7 +31,7 @@ export function streamNameFromArn(eventSourceArn) {
  * @param {import('aws-lambda').KinesisStreamRecord} record
  * @returns {{ data: Buffer, partitionKey: string, sequenceNumber: string }}
  */
-export function decodeKinesisRecord(record) {
+function decodeKinesisRecord(record) {
   const k = record.kinesis;
   const raw = k?.data;
   if (!raw) {
@@ -46,7 +46,7 @@ export function decodeKinesisRecord(record) {
 }
 
 /** Try JSON; fall back to UTF-8 string */
-export function parsePayload(data) {
+function parsePayload(data) {
   const text = data.toString("utf8");
   try {
     return JSON.parse(text);
@@ -54,3 +54,5 @@ export function parsePayload(data) {
     return text;
   }
 }
+
+export { isKinesisEvent, streamNameFromArn, decodeKinesisRecord, parsePayload };

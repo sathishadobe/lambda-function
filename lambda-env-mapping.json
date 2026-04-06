@@ -1,4 +1,5 @@
 {
+  "_comment": "Used by scripts/build-lambda-environment.sh when env vars are set individually (e.g. local). CI deploys use GitHub secret LAMBDA_ENVIRONMENT_VARIABLES (JSON object) via scripts/lambda-env-from-github-secret.sh.",
   "variables": [
     "COMMERCE_BASE_URL",
     "COMMERCE_CONSUMER_KEY",
@@ -6,6 +7,7 @@
     "COMMERCE_ACCESS_TOKEN",
     "COMMERCE_ACCESS_TOKEN_SECRET",
     "COMMERCE_OFFLINE_BOOKING_CANCEL_PATH",
+    "BOOKING_ORDER_ID_PREFIX",
     "DMS_TOKEN_URL",
     "DMS_CLIENT_ID",
     "DMS_CLIENT_SECRET",

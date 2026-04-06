@@ -5,7 +5,7 @@ import { handleKinesis } from "./kinesis-handler.mjs";
  * - Kinesis: routes by stream ARN → processor (see config/stream-registry.mjs).
  * - Other invokes: health / manual test only (primary path is Kinesis).
  */
-export const handler = async (event) => {
+async function handler(event) {
   if (isKinesisEvent(event)) {
     return handleKinesis(event);
   }
@@ -24,4 +24,6 @@ export const handler = async (event) => {
         "Invoke with a Kinesis event, or { \"action\": \"ping\" } for health. Commerce REST: use getCommerceClient(environment) from lib/commerce-client.mjs in processors."
     })
   };
-};
+}
+
+export { handler };

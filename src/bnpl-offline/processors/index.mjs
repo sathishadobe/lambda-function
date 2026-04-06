@@ -16,10 +16,12 @@ const registry = {
  * @param {string} name
  * @param {import('./types.mjs').ProcessorContext} ctx
  */
-export async function runProcessor(name, ctx) {
+async function runProcessor(name, ctx) {
   const mod = registry[name];
   if (!mod?.process) {
     throw new Error(`Unknown processor "${name}". Add it to processors/index.mjs`);
   }
   return mod.process(ctx);
 }
+
+export { runProcessor };

@@ -3,31 +3,40 @@ import { decodeKinesisRecord, parsePayload } from "./lib/kinesis.mjs";
 import { runProcessor } from "./processors/index.mjs";
 
 /**
- * Process Kinesis batch: route by stream ARN → processor + environment.
- * Uses Promise.allSettled for parallel records; reports partial batch failures.
+ * Kinesis batch: each record routes by stream ARN → its own processor + environment.
+ * All records run in parallel (Promise.allSettled) so every processor runs even if another fails.
+ * If any record fails → throw (whole invocation fails). If all succeed → return empty batchItemFailures.
  *
  * @param {import('aws-lambda').KinesisStreamEvent} event
+ * @returns {Promise<{ batchItemFailures: { itemIdentifier: string }[] }>}
  */
-export async function handleKinesis(event) {
+async function handleKinesis(event) {
   const settled = await Promise.allSettled(
     event.Records.map((record) => processRecord(record))
   );
 
-  /** @type {{ itemIdentifier: string }[]} */
-  const batchItemFailures = [];
+  /** @type {{ seq: string; reason: unknown }[]} */
+  const failures = [];
 
   settled.forEach((result, index) => {
     if (result.status === "fulfilled") {
       return;
     }
-    const seq = event.Records[index]?.kinesis?.sequenceNumber;
-    console.error("Record failed:", seq, result.reason);
-    if (seq) {
-      batchItemFailures.push({ itemIdentifier: seq });
-    }
+    const seq = event.Records[index]?.kinesis?.sequenceNumber ?? "";
+    failures.push({ seq, reason: result.reason });
+    console.error("Record failed:", seq || index, result.reason);
   });
 
-  return { batchItemFailures };
+  if (failures.length > 0) {
+    const detail = failures
+      .map((f) => `[${f.seq || "?"}] ${formatReason(f.reason)}`)
+      .join("; ");
+    throw new Error(
+      `Kinesis batch: ${failures.length}/${settled.length} record(s) failed — ${detail}`
+    );
+  }
+
+  return { batchItemFailures: [] };
 }
 
 /**
@@ -51,3 +60,13 @@ async function processRecord(record) {
     sequenceNumber
   });
 }
+
+/** @param {unknown} reason */
+function formatReason(reason) {
+  if (reason instanceof Error) {
+    return reason.message;
+  }
+  return String(reason);
+}
+
+export { handleKinesis };

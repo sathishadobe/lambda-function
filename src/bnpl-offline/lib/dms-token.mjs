@@ -12,7 +12,7 @@ const tokenCache = new Map();
  * @param {import('./env-context.mjs').Environment} environment
  * @param {{ forceRefresh?: boolean }} [options]
  */
-export async function getDmsAccessToken(environment, options) {
+async function getDmsAccessToken(environment, options) {
   const forceRefresh = options?.forceRefresh === true;
   const now = Date.now();
   const cached = tokenCache.get(environment);
@@ -55,7 +55,7 @@ export async function getDmsAccessToken(environment, options) {
   return token;
 }
 
-export function extractAccessToken(data) {
+function extractAccessToken(data) {
   if (!data || typeof data !== "object") {
     return "";
   }
@@ -69,7 +69,7 @@ export function extractAccessToken(data) {
   );
 }
 
-export async function parseJsonSafe(response) {
+async function parseJsonSafe(response) {
   const text = await response.text();
   if (!text) {
     return {};
@@ -80,3 +80,5 @@ export async function parseJsonSafe(response) {
     return { _raw: text };
   }
 }
+
+export { getDmsAccessToken, extractAccessToken, parseJsonSafe };

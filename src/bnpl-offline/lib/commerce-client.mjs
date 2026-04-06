@@ -17,7 +17,7 @@ const clients = new Map();
  * @param {import('./env-context.mjs').Environment} environment
  * @returns {CommerceRestClient}
  */
-export function getCommerceClient(environment) {
+function getCommerceClient(environment) {
   const key = environment;
   let client = clients.get(key);
   if (!client) {
@@ -37,7 +37,7 @@ export function getCommerceClient(environment) {
  * @property {string} accessTokenSecret
  */
 
-export class CommerceRestClient {
+class CommerceRestClient {
   /**
    * @param {CommerceOAuthConfig} config
    */
@@ -156,3 +156,5 @@ export class CommerceRestClient {
     return this.request("PUT", resourcePath, body, options);
   }
 }
+
+export { getCommerceClient, CommerceRestClient };

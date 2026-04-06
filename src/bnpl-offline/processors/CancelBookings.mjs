@@ -1,70 +1,84 @@
 import { getCommerceClient } from "../lib/commerce-client.mjs";
 import {
-  buildOfflineBookingCancelBody,
-  getOfflineBookingCancelRestPath
-} from "../lib/cancel-booking-body.mjs";
+  bookingOrderIdPrefix,
+  clip,
+  isBookingCandidate,
+  orderIdFromRow
+} from "../lib/booking-commerce-helpers.mjs";
 
 /**
- * Offline booking cancellation → Adobe Commerce REST (OAuth 1.0a).
- * Configure Lambda env COMMERCE_OFFLINE_BOOKING_CANCEL_PATH to the V1 relative path
- * from your spec (e.g. offline/booking/cancel). Staging: …_PATH_STAGING.
+ * Kinesis payload: `{ RECORDS: object[] }`. Row fields UPPERCASE.
+ * Order id: trimmed WEB_ORDER_NUM or WEB_ENQ_NUM (first non-empty).
+ * Filter: order id contains BOOKING_ORDER_ID_PREFIX, non-empty ENQ_REF_NUM, ENQ_STATUS === "C".
+ * POST rest/V1/booking/:orderId/cancel
  *
  * @param {import('./types.mjs').ProcessorContext} ctx
  */
-export async function process(ctx) {
-  const path = getOfflineBookingCancelRestPath(ctx.environment);
-  if (!path) {
+async function process(ctx) {
+  const payload = ctx.payload;
+  if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error('CancelBookings: payload must be an object with RECORDS array');
+  }
+
+  const records = /** @type {{ RECORDS?: unknown }} */ (payload).RECORDS;
+  if (!Array.isArray(records) || records.length === 0) {
+    throw new Error("CancelBookings: RECORDS must be a non-empty array");
+  }
+
+  const rows = records.filter((r) => r !== null && typeof r === "object");
+  if (rows.length === 0) {
+    throw new Error("CancelBookings: no object rows in RECORDS");
+  }
+
+  const prefix = bookingOrderIdPrefix(ctx.environment);
+  if (!prefix) {
     throw new Error(
-      "Set COMMERCE_OFFLINE_BOOKING_CANCEL_PATH (and optional _STAGING) to the Commerce REST path under rest/V1/"
+      "CancelBookings: set BOOKING_ORDER_ID_PREFIX (staging: BOOKING_ORDER_ID_PREFIX_STAGING in Lambda)"
     );
   }
 
-  const raw =
-    ctx.payload && typeof ctx.payload === "object"
-      ? ctx.payload
-      : ctx.payload && typeof ctx.payload === "string"
-        ? parseJsonSafe(ctx.payload)
-        : null;
-
-  if (!raw || typeof raw !== "object") {
-    throw new Error("CancelBookings: Kinesis payload must be a JSON object with cancellation fields");
+  const typed = /** @type {Record<string, unknown>[]} */ (rows);
+  const candidates = typed.filter((row) => isBookingCandidate(row, prefix));
+  if (candidates.length === 0) {
+    console.log(
+      JSON.stringify({
+        processor: "CancelBookings",
+        outcome: "skipped",
+        streamName: ctx.streamName,
+        sequenceNumber: ctx.sequenceNumber,
+        rowCount: rows.length
+      })
+    );
+    return;
   }
 
-  const body = buildOfflineBookingCancelBody(raw);
   const client = getCommerceClient(ctx.environment);
+  const failures = [];
+
+  for (const row of candidates) {
+    const orderId = orderIdFromRow(row);
+    const res = await client.post(`booking/${encodeURIComponent(orderId)}/cancel`, {});
+    const text = await res.text();
+    if (!res.ok) {
+      failures.push(`${orderId}: HTTP ${res.status} ${clip(text, 400)}`);
+    }
+  }
+
+  if (failures.length > 0) {
+    throw new Error(
+      `CancelBookings: ${failures.length}/${candidates.length} failed — ${failures.join(" | ")}`
+    );
+  }
 
   console.log(
     JSON.stringify({
       processor: "CancelBookings",
-      environment: ctx.environment,
+      outcome: "success",
+      count: candidates.length,
       streamName: ctx.streamName,
-      sequenceNumber: ctx.sequenceNumber,
-      path,
-      bodyKeys: Object.keys(body)
+      sequenceNumber: ctx.sequenceNumber
     })
   );
-
-  const res = await client.post(path, body);
-  const responseText = await res.text();
-
-  if (!res.ok) {
-    throw new Error(`Commerce offline booking cancel failed: HTTP ${res.status} ${responseText}`);
-  }
-
-  console.log("CancelBookings commerce response:", truncate(responseText, 2000));
 }
 
-function parseJsonSafe(s) {
-  try {
-    return JSON.parse(s);
-  } catch {
-    return null;
-  }
-}
-
-function truncate(s, max) {
-  if (s.length <= max) {
-    return s;
-  }
-  return `${s.slice(0, max)}…`;
-}
+export { process };

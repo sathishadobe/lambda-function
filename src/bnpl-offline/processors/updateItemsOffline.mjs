@@ -3,7 +3,7 @@
  *
  * @param {import('./types.mjs').ProcessorContext} ctx
  */
-export async function process(ctx) {
+async function process(ctx) {
   console.log(
     JSON.stringify({
       processor: "updateItemsOffline",
@@ -16,3 +16,5 @@ export async function process(ctx) {
   // const client = getCommerceClient(ctx.environment);
   // const res = await client.post("enquirynum/update", { ... });
 }
+
+export { process };
