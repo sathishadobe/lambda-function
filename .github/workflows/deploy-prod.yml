@@ -115,6 +115,9 @@ jobs:
               --function-name "$FUNCTION_NAME" \
               --zip-file "fileb://$FOLDER.zip" > /dev/null
 
+            echo "[INFO] Waiting for code update to finish (required before config/env update)..."
+            aws lambda wait function-updated --function-name "$FUNCTION_NAME"
+
             echo "[SUCCESS] Code updated for $FUNCTION_NAME"
 
             # -------------------------------
