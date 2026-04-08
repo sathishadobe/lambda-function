@@ -131,3 +131,33 @@ jobs:
 
             echo "[SUCCESS] Deployment complete for $FUNCTION_NAME"
           done
+
+      # 7. Attach New Relic Lambda Extension layer + env vars to logforwarding
+      - name: Configure New Relic on logforwarding
+        env:
+          NEW_RELIC_LICENSE_KEY: ${{ secrets.NEW_RELIC_LICENSE_KEY }}
+          NEW_RELIC_ACCOUNT_ID: ${{ secrets.NEW_RELIC_ACCOUNT_ID }}
+          NEW_RELIC_LAMBDA_HANDLER: ${{ secrets.NEW_RELIC_LAMBDA_HANDLER }}
+        run: |
+          echo "[INFO] Fetching current environment for logforwarding..."
+          CURRENT_ENV=$(aws lambda get-function-configuration \
+            --function-name logforwarding \
+            --query 'Environment.Variables' --output json 2>/dev/null || echo '{}')
+
+          echo "[INFO] Merging New Relic environment variables..."
+          MERGED_ENV=$(echo "$CURRENT_ENV" | jq \
+            --arg nrkey "$NEW_RELIC_LICENSE_KEY" \
+            --arg nracct "$NEW_RELIC_ACCOUNT_ID" \
+            --arg nrhandler "$NEW_RELIC_LAMBDA_HANDLER" \
+            '. + {
+              "NEW_RELIC_LICENSE_KEY": $nrkey,
+              "NEW_RELIC_ACCOUNT_ID": $nracct,
+              "NEW_RELIC_LAMBDA_HANDLER": $nrhandler
+            }')
+
+          echo "[INFO] Updating logforwarding with New Relic layer and environment..."
+          aws lambda update-function-configuration \
+            --function-name logforwarding \
+            --layers arn:aws:lambda:us-east-1:451483290750:layer:NewRelicLambdaExtension:40 \
+            --environment "{\"Variables\": $MERGED_ENV}"
+          echo "[SUCCESS] New Relic layer and environment configured for logforwarding"
